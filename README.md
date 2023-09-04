@@ -1,3 +1,3 @@
 # OBF-project
 
-script.R is the main script used for statistical analyses and data formatting.
+script_github_OBF.R is the main script used for statistical analyses and data formatting.
