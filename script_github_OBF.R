@@ -335,6 +335,14 @@ Anova(mx)
 ## Over-dispersion test
 testDispersion(mx, plot = F, type = "DHARMa", alternative = "greater")
 
+## Contrasts significance and estimates of the interaction parameter
+# Difference from mean across habitats
+emtrends(mx, eff ~ occ_sol_mix, var = "annee", adjust = "none")$contrasts %>% 
+  broom::tidy()
+# Difference from 0 (constant trend)
+emtrends(mx, eff ~ occ_sol_mix, var = "annee", adjust = "none")$emtrends %>% 
+  broom::tidy()
+
 ## Post-hoc test for the interaction parameter
 leastsquare = lsmeans(mx, pairwise ~ occ_sol_mix:scale(annee)) 
 leastsquare$lsmeans
@@ -355,6 +363,14 @@ testDispersion(mshannon, alternative = "greater")
 Anova(mshannon)
 summary(mshannon)
 
+## Contrasts significance and estimates of the interaction parameter
+# Difference from mean across habitats
+emtrends(mshannon, eff ~ occ_sol_mix, var = "annee", adjust = "none")$emtrends %>%
+  broom::tidy()
+# Difference from 0 (constant trend)
+emtrends(mshannon, eff ~ occ_sol_mix, var = "annee", adjust = "none")$contrasts %>%
+  broom::tidy()
+
 ggemmeans(mshannon, terms = c("annee","occ_sol_mix"), type = "fe") # Model predictions
 
 ## Post-hoc test for the interaction parameter
@@ -371,6 +387,14 @@ Anova(mpielou)
 summary(mpielou)
 
 ggemmeans(mpielou, terms = c("annee","occ_sol_mix"), type = "fe")
+
+## Contrasts significance and estimates of the interaction parameter
+# Difference from mean across habitats
+emtrends(mpielou, eff ~ occ_sol_mix, var = "annee", adjust = "none")$emtrends %>%
+  broom::tidy()
+# Difference from 0 (constant trend)
+emtrends(mpielou, eff ~ occ_sol_mix, var = "annee", adjust = "none")$contrasts %>%
+  broom::tidy()
 
 ## Post-hoc test for the interaction parameter
 leastsquare = lsmeans(mpielou, pairwise ~ occ_sol_mix:scale(annee), pbkrtest.limit = 5185)
@@ -482,3 +506,24 @@ ellen_nested_sum = ellen_nested_sum %>%
   unnest(anovresu, .drop = T) %>%  
   mutate(p.value.correct.aov = (p.value*6)) %>% 
   rename(p.value.aov = p.value)
+
+## Contrasts significance and estimates of the interaction parameter for every EIV
+interaction_signifiance = function(eiv) {
+  mx = lmer(EIV_value ~ saison_rel + scale(annee)*occ_sol_mix + (1|maille/station),
+              data = mean_ellen %>% filter(EIV_type == eiv) %>% 
+                arrange(annee, saison_rel), contrasts = list(occ_sol_mix = "contr.sum"))
+  
+  print(Anova(mx))
+  
+  print("If result from Anova(mx)$interaction is significant see below:")
+  emtrends(mx, eff ~ occ_sol_mix, var = "annee", adjust = "none")$emtrends
+  emtrends(mx, eff ~ occ_sol_mix, var = "annee", adjust = "none")$contrasts
+
+  print("If result from Anova(mx)$interaction is non-significant see below:")
+  emmeans::emmeans(mx, eff ~ occ_sol_mix, adjust = "none")$contrasts
+  emmeans::emmeans(mx, eff ~ occ_sol_mix, adjust = "none")$emmeans
+}
+
+for (eiv in mean_ellen$EIV_type %>% unique()) {
+  interaction_signifiance(eiv)
+}
